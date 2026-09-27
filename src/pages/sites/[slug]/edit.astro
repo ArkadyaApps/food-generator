@@ -5,6 +5,7 @@ import { sites } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import WizardEdit from "@/components/wizard/WizardEdit";
 import { SiteFormSchema } from "@/lib/validations/site";
+import { ZodError } from "zod";
 
 const { slug } = Astro.params;
 const database = db(Astro.locals.runtime.env.DB);
@@ -19,9 +20,16 @@ try {
   initialData = SiteFormSchema.parse(parsed);
 } catch (err) {
   // Redirecting silently here made the "Edit site" button look dead with no
-  // way to tell why — log the real reason so it shows up in server logs.
+  // way to tell why — log the real reason and surface it in the query string
+  // so it's visible without digging through server logs.
   console.error(`[edit] failed to load saved form data for "${slug}":`, err);
-  return Astro.redirect(`/sites/${slug}?editError=1`);
+  const detail =
+    err instanceof ZodError
+      ? err.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`).join("; ")
+      : err instanceof Error
+        ? err.message
+        : "Unknown error";
+  return Astro.redirect(`/sites/${slug}?editError=1&editErrorDetail=${encodeURIComponent(detail)}`);
 }
 ---
 
