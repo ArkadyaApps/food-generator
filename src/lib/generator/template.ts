@@ -82,6 +82,17 @@ jobs:
 
       - run: npm install
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: \${{ runner.os }}-playwright-\${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Generate SEO share image
+        run: npm run generate:og
+
       - run: npm run build
 
       - name: Deploy to Cloudflare Pages
@@ -89,6 +100,42 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: \${{ vars.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: \${{ vars.CF_ACCOUNT_ID }}
+`;
+}
+
+export function generateAstroConfig(data: SiteFormData): string {
+  return `import { defineConfig } from "astro/config";
+import cloudflare from "@astrojs/cloudflare";
+import react from "@astrojs/react";
+import sitemap from "@astrojs/sitemap";
+import tailwindcss from "@tailwindcss/vite";
+
+export default defineConfig({
+  output: "server",
+  adapter: cloudflare({ platformProxy: { enabled: true } }),
+  integrations: [
+    react(),
+    sitemap({
+      // Only real pages — utility endpoints (robots.txt, llms.txt, OG image) aren't pages.
+      filter: (page) => !/\\/(robots|llms|llms-full)\\.txt$/.test(page),
+    }),
+  ],
+  vite: {
+    plugins: [tailwindcss()],
+    resolve: {
+      alias:
+        process.env.NODE_ENV === "production"
+          ? { "react-dom/server": "react-dom/server.edge" }
+          : undefined,
+    },
+  },
+  i18n: {
+    defaultLocale: ${JSON.stringify(data.defaultLocale)},
+    locales: ["en", "fr", "th"],
+    routing: { prefixDefaultLocale: true, redirectToDefaultLocale: true },
+  },
+  site: ${JSON.stringify(`https://${data.slug}.pages.dev`)},
+});
 `;
 }
 

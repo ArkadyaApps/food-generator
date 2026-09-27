@@ -7,6 +7,7 @@ import {
   generateThJson,
   generateWorkflow,
   generateLogoSvg,
+  generateAstroConfig,
 } from "./template";
 import { THEMES } from "@/lib/themes";
 import {
@@ -169,6 +170,12 @@ export async function deployRestaurantSite(
   const workflowContent = generateWorkflow(branch);
   const workflowSha = await getFileSha(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, ".github/workflows/deploy.yml");
   await commitFile(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, ".github/workflows/deploy.yml", toBase64(workflowContent), "chore: configure deployment workflow", branch, workflowSha);
+
+  // Set the real deployed URL so canonical tags, sitemap, robots.txt and the
+  // OG-image QR code all point at the live site instead of the template placeholder.
+  const astroConfigContent = generateAstroConfig(data);
+  const astroConfigSha = await getFileSha(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "astro.config.mjs");
+  await commitFile(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "astro.config.mjs", toBase64(astroConfigContent), "chore: set live site URL for SEO tags", branch, astroConfigSha);
 
   // 7. Create CF Pages project (production_branch must match actual git branch)
   const { subdomain } = await createPagesProject(
