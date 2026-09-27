@@ -11,6 +11,8 @@ const [site] = await database.select().from(sites).where(eq(sites.slug, slug!));
 
 if (!site) return Astro.redirect("/");
 
+const editError = Astro.url.searchParams.get("editError") === "1";
+
 const STATUS_CONFIG = {
   live:      { bg: "rgba(22,163,74,0.09)",   text: "#16a34a", dot: "#22c55e",  label: "Live" },
   deploying: { bg: "rgba(202,138,4,0.09)",   text: "#b45309", dot: "#f59e0b",  label: "Building" },
@@ -197,6 +199,16 @@ const p = theme?.preview ?? { bg: "#f1f5f9", text: "#0f172a", accent: "#64748b",
 
       <!-- Full-width CTA / notice -->
       <div style="grid-column:1/-1;">
+        {editError && (
+          <div style="padding:1.5rem 1.75rem; background:#fef2f2; border:1px solid #fecaca; border-radius:16px; margin-bottom:1rem;">
+            <p style="font-size:13.5px; font-weight:700; color:#991b1b; margin-bottom:6px;">Couldn't open the editor</p>
+            <p style="font-size:13px; color:#b91c1c; line-height:1.65;">
+              The saved form data for this site couldn't be loaded, so the edit form couldn't be pre-filled. This usually
+              means the stored data is out of date with the current form. Check the server logs for details, or recreate
+              the site's content directly in the <a href={`${site.githubRepo}/edit/master/src/config/site.ts`} target="_blank" rel="noopener noreferrer" style="color:#b91c1c; text-decoration:underline;">GitHub repo</a>.
+            </p>
+          </div>
+        )}
         {site.formData
           ? (
             <div style="padding:1.5rem 1.75rem; background:white; border:1px solid rgba(0,0,0,0.055); border-radius:16px; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; box-shadow:0 1px 2px rgba(0,0,0,0.03);">

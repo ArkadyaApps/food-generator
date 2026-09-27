@@ -65,6 +65,7 @@ export default function StepRedeploy({ slug, onBack, onSuccess, deployUrl, githu
             <li><code>src/config/site.ts</code> — restaurant settings &amp; coordinates</li>
             <li><code>src/i18n/en.json</code> — content &amp; translations</li>
             <li>Menu photos (if updated)</li>
+            <li><code>.github/workflows/deploy.yml</code> &amp; <code>astro.config.mjs</code> — synced to the current generator, so this site's CI stays consistent with every other site</li>
           </ul>
         </div>
       )}
