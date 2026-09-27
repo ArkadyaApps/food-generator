@@ -80,13 +80,13 @@ jobs:
         with:
           node-version: 22
 
-      - run: npm install
+      - run: npm install --legacy-peer-deps
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: \${{ runner.os }}-playwright-\${{ hashFiles('package-lock.json') }}
+          key: \${{ runner.os }}-playwright-\${{ hashFiles('package.json') }}
 
       - run: npx playwright install --with-deps chromium
 
