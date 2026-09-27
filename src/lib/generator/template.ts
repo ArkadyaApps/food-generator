@@ -92,6 +92,9 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
+      - name: Install ffmpeg (required by the hero-video render)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Generate SEO share image
         run: npm run generate:og
 
