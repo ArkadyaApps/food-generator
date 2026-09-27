@@ -53,7 +53,7 @@ export const SiteFormSchema = z.object({
   socialHandle: z.string().optional(),
   socialUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   address: z.string().min(1, "Address required"),
-  mapsUrl: z.string().url("Paste a Google Maps URL").optional(),
+  mapsUrl: z.string().url("Paste a Google Maps URL").optional().or(z.literal("")),
   mapsLat: z.number(),
   mapsLng: z.number(),
 

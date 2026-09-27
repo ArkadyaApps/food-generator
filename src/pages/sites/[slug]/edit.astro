@@ -17,8 +17,11 @@ try {
   if (!site.formData) throw new Error("no form data");
   const parsed = JSON.parse(site.formData);
   initialData = SiteFormSchema.parse(parsed);
-} catch {
-  return Astro.redirect(`/sites/${slug}`);
+} catch (err) {
+  // Redirecting silently here made the "Edit site" button look dead with no
+  // way to tell why — log the real reason so it shows up in server logs.
+  console.error(`[edit] failed to load saved form data for "${slug}":`, err);
+  return Astro.redirect(`/sites/${slug}?editError=1`);
 }
 ---
 
