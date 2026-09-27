@@ -12,6 +12,7 @@ const [site] = await database.select().from(sites).where(eq(sites.slug, slug!));
 if (!site) return Astro.redirect("/");
 
 const editError = Astro.url.searchParams.get("editError") === "1";
+const editErrorDetail = Astro.url.searchParams.get("editErrorDetail");
 
 const STATUS_CONFIG = {
   live:      { bg: "rgba(22,163,74,0.09)",   text: "#16a34a", dot: "#22c55e",  label: "Live" },
@@ -204,9 +205,15 @@ const p = theme?.preview ?? { bg: "#f1f5f9", text: "#0f172a", accent: "#64748b",
             <p style="font-size:13.5px; font-weight:700; color:#991b1b; margin-bottom:6px;">Couldn't open the editor</p>
             <p style="font-size:13px; color:#b91c1c; line-height:1.65;">
               The saved form data for this site couldn't be loaded, so the edit form couldn't be pre-filled. This usually
-              means the stored data is out of date with the current form. Check the server logs for details, or recreate
-              the site's content directly in the <a href={`${site.githubRepo}/edit/master/src/config/site.ts`} target="_blank" rel="noopener noreferrer" style="color:#b91c1c; text-decoration:underline;">GitHub repo</a>.
+              means the stored data is out of date with the current form. Recreate the site's content directly in the
+              <a href={`${site.githubRepo}/edit/master/src/config/site.ts`} target="_blank" rel="noopener noreferrer" style="color:#b91c1c; text-decoration:underline;">GitHub repo</a>
+              instead, or share the detail below so the form validation can be fixed.
             </p>
+            {editErrorDetail && (
+              <p style="font-size:12px; color:#991b1b; font-family:ui-monospace,monospace; background:#fee2e2; padding:8px 10px; border-radius:8px; margin-top:10px; word-break:break-word;">
+                {editErrorDetail}
+              </p>
+            )}
           </div>
         )}
         {site.formData
