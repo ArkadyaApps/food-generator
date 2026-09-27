@@ -85,13 +85,18 @@ jobs:
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
-          path: ~/.cache/ms-playwright
+          path: |
+            ~/.cache/ms-playwright
+            ~/.cache/puppeteer
           key: \${{ runner.os }}-playwright-\${{ hashFiles('package.json') }}
 
       - run: npx playwright install --with-deps chromium
 
       - name: Generate SEO share image
         run: npm run generate:og
+
+      - name: Generate hero background video
+        run: npm run generate:hero
 
       - run: npm run build
 
