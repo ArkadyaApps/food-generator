@@ -1,5 +1,13 @@
 import type { SiteFormData } from "@/lib/validations/site";
-import { generateSiteConfig, generateEnJson, generateFrJson, generateThJson, generateLogoSvg } from "./template";
+import {
+  generateSiteConfig,
+  generateEnJson,
+  generateFrJson,
+  generateThJson,
+  generateLogoSvg,
+  generateWorkflow,
+  generateAstroConfig,
+} from "./template";
 import { THEMES } from "@/lib/themes";
 import { commitFile, getFileSha, getDefaultBranch } from "./github";
 
@@ -21,6 +29,19 @@ export async function redeployRestaurantSite(
   }
 ): Promise<void> {
   const branch = await getDefaultBranch(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug);
+
+  // Keep deploy infrastructure in sync with the current generator on every
+  // redeploy — sites created at different times otherwise freeze whatever
+  // workflow.yml/astro.config.mjs existed at their creation date and drift
+  // out of consistency (e.g. one site stuck on an older Node version or
+  // missing a CI step a newer one has).
+  const workflowContent = generateWorkflow(branch);
+  const workflowSha = await getFileSha(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug, ".github/workflows/deploy.yml");
+  await commitFile(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug, ".github/workflows/deploy.yml", toBase64(workflowContent), "chore: sync deploy workflow with generator", branch, workflowSha);
+
+  const astroConfigContent = generateAstroConfig(data);
+  const astroConfigSha = await getFileSha(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug, "astro.config.mjs");
+  await commitFile(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug, "astro.config.mjs", toBase64(astroConfigContent), "chore: sync astro config with generator", branch, astroConfigSha);
 
   // Update site config
   const siteConfigContent = generateSiteConfig(data);
