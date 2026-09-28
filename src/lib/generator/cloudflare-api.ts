@@ -57,12 +57,24 @@ export async function applyD1Migration(
   }
 }
 
-export async function createPagesProject(
+async function getPagesSubdomain(
+  apiToken: string,
+  accountId: string,
+  projectName: string
+): Promise<string> {
+  const res = await fetch(`${CF_API}/accounts/${accountId}/pages/projects/${projectName}`, {
+    headers: cfHeaders(apiToken),
+  });
+  const data = (await res.json()) as { result?: { subdomain?: string } };
+  return data.result?.subdomain ?? `${projectName}.pages.dev`;
+}
+
+async function createPagesProject(
   apiToken: string,
   accountId: string,
   projectName: string,
-  productionBranch: string = "main"
-): Promise<{ subdomain: string }> {
+  productionBranch: string
+): Promise<{ subdomain: string; created: boolean }> {
   const res = await fetch(`${CF_API}/accounts/${accountId}/pages/projects`, {
     method: "POST",
     headers: cfHeaders(apiToken),
@@ -72,13 +84,51 @@ export async function createPagesProject(
     }),
   });
 
+  if (res.status === 409) {
+    return { subdomain: await getPagesSubdomain(apiToken, accountId, projectName), created: false };
+  }
   if (!res.ok) {
-    const err = await res.text();
-    if (res.status !== 409) {
-      throw new Error(`CF Pages project creation failed: ${err}`);
+    throw new Error(`CF Pages project creation failed: ${await res.text()}`);
+  }
+  const data = (await res.json()) as { result?: { subdomain: string } };
+  return { subdomain: data.result?.subdomain ?? `${projectName}.pages.dev`, created: true };
+}
+
+async function deletePagesProject(
+  apiToken: string,
+  accountId: string,
+  projectName: string
+): Promise<void> {
+  await fetch(`${CF_API}/accounts/${accountId}/pages/projects/${projectName}`, {
+    method: "DELETE",
+    headers: cfHeaders(apiToken),
+  });
+}
+
+/**
+ * Cloudflare appends a random suffix to the *.pages.dev address when the plain
+ * name is already taken by any account. A project's address cannot be changed
+ * afterwards, so try a few close variants of the name and keep the first one
+ * that gets a clean address. Only projects created by this call are ever deleted.
+ */
+export async function createFriendlyPagesProject(
+  apiToken: string,
+  accountId: string,
+  slug: string,
+  productionBranch: string
+): Promise<{ name: string; subdomain: string }> {
+  const candidates = [slug, `${slug}-site`, `${slug}-web`, `${slug}-resto`, `${slug}-eat`].filter(
+    (n) => n.length <= 58
+  );
+
+  for (const name of candidates) {
+    const { subdomain, created } = await createPagesProject(apiToken, accountId, name, productionBranch);
+    if (subdomain === `${name}.pages.dev` || !created) {
+      return { name, subdomain };
     }
+    await deletePagesProject(apiToken, accountId, name);
   }
 
-  const data = (await res.json()) as { result?: { subdomain: string } };
-  return { subdomain: data.result?.subdomain ?? `${projectName}.pages.dev` };
+  const { subdomain } = await createPagesProject(apiToken, accountId, slug, productionBranch);
+  return { name: slug, subdomain };
 }

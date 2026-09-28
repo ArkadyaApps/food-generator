@@ -27,6 +27,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         GITHUB_TOKEN: env.GITHUB_TOKEN,
         GITHUB_OWNER: env.GITHUB_OWNER,
         CF_API_TOKEN: env.CF_API_TOKEN,
+        SITE_URL: site.deployUrl ?? `https://${slug}.pages.dev`,
       });
     } catch (err) {
       await database.update(sites).set({ status: "error", updatedAt: new Date() }).where(eq(sites.slug, slug));

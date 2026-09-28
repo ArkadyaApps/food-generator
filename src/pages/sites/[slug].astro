@@ -116,7 +116,7 @@ const p = theme?.preview ?? { bg: "#f1f5f9", text: "#0f172a", accent: "#64748b",
                 {sc.label}
               </span>
             </div>
-            <p style="font-size:12.5px; color:#94a3b8; font-family:ui-monospace,monospace; letter-spacing:-0.01em;">{site.slug}.pages.dev</p>
+            <p style="font-size:12.5px; color:#94a3b8; font-family:ui-monospace,monospace; letter-spacing:-0.01em;">{site.deployUrl ? new URL(site.deployUrl).host : `${site.slug}.pages.dev`}</p>
             {theme && (
               <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
                 <div style={`width:10px; height:10px; border-radius:3px; background:${p.accent}; flex-shrink:0;`} />

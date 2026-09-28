@@ -19,7 +19,7 @@ import {
   addRepoSecret,
   deleteRepoVariable,
 } from "./github";
-import { createPagesProject, createD1Database, applyD1Migration } from "./cloudflare-api";
+import { createFriendlyPagesProject, createD1Database, applyD1Migration } from "./cloudflare-api";
 
 function toBase64(str: string): string {
   // Use TextEncoder for proper UTF-8 handling in CF Workers
@@ -48,7 +48,6 @@ export async function deployRestaurantSite(
   }
 ): Promise<DeployResult> {
   const repoName = data.slug;
-  const cfProjectName = data.slug;
 
   // 1. Create GitHub repo from template
   const repo = await createRepoFromTemplate(
@@ -62,6 +61,16 @@ export async function deployRestaurantSite(
   // Wait for the repo to be ready, then detect actual default branch
   await new Promise((r) => setTimeout(r, 3000));
   const branch = await getDefaultBranch(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName);
+
+  // Create the CF Pages project first: its real *.pages.dev address is the site URL
+  // used for canonical tags, sitemap and the OG QR code (production_branch must match the git branch).
+  const { name: cfProjectName, subdomain } = await createFriendlyPagesProject(
+    env.CF_API_TOKEN,
+    env.CF_ACCOUNT_ID,
+    data.slug,
+    branch
+  );
+  const siteUrl = `https://${subdomain}`;
 
   // 2. Commit customized src/config/site.ts
   const siteConfigContent = generateSiteConfig(data);
@@ -164,7 +173,7 @@ export async function deployRestaurantSite(
   await applyD1Migration(env.CF_API_TOKEN, env.CF_ACCOUNT_ID, d1Uuid, migrationSql);
 
   // Commit customized wrangler.toml with real D1 UUID
-  const wranglerContent = generateWranglerToml(data, d1Uuid);
+  const wranglerContent = generateWranglerToml(data, d1Uuid, cfProjectName);
   const wranglerSha = await getFileSha(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "wrangler.toml");
   await commitFile(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "wrangler.toml", toBase64(wranglerContent), "chore: configure wrangler", branch, wranglerSha);
 
@@ -175,17 +184,9 @@ export async function deployRestaurantSite(
 
   // Set the real deployed URL so canonical tags, sitemap, robots.txt and the
   // OG-image QR code all point at the live site instead of the template placeholder.
-  const astroConfigContent = generateAstroConfig(data);
+  const astroConfigContent = generateAstroConfig(data, siteUrl);
   const astroConfigSha = await getFileSha(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "astro.config.mjs");
   await commitFile(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "astro.config.mjs", toBase64(astroConfigContent), "chore: set live site URL for SEO tags", branch, astroConfigSha);
-
-  // 7. Create CF Pages project (production_branch must match actual git branch)
-  const { subdomain } = await createPagesProject(
-    env.CF_API_TOKEN,
-    env.CF_ACCOUNT_ID,
-    cfProjectName,
-    branch
-  );
 
   // 8. Set GitHub Actions config: token as an encrypted secret, non-sensitive values as variables
   await addRepoVariable(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "CF_PROJECT_NAME", cfProjectName);
@@ -193,11 +194,9 @@ export async function deployRestaurantSite(
   await addRepoSecret(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "CF_API_TOKEN", env.CF_API_TOKEN);
   await deleteRepoVariable(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "CF_API_TOKEN");
 
-  const pagesUrl = `https://${subdomain}`;
-
   return {
     repoUrl: repo.html_url,
-    pagesUrl,
+    pagesUrl: siteUrl,
     cfProjectName,
   };
 }

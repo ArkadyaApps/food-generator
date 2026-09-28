@@ -63,6 +63,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .set({
         status: "live",
         deployUrl: result.pagesUrl,
+        cfProjectName: result.cfProjectName,
         updatedAt: new Date(),
       })
       .where(eq(sites.id, id));

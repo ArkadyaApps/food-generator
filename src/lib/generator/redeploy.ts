@@ -27,6 +27,7 @@ export async function redeployRestaurantSite(
     GITHUB_TOKEN: string;
     GITHUB_OWNER: string;
     CF_API_TOKEN: string;
+    SITE_URL: string;
   }
 ): Promise<void> {
   const branch = await getDefaultBranch(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug);
@@ -45,7 +46,7 @@ export async function redeployRestaurantSite(
   const workflowSha = await getFileSha(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug, ".github/workflows/deploy.yml");
   await commitFile(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug, ".github/workflows/deploy.yml", toBase64(workflowContent), "chore: sync deploy workflow with generator", branch, workflowSha);
 
-  const astroConfigContent = generateAstroConfig(data);
+  const astroConfigContent = generateAstroConfig(data, env.SITE_URL);
   const astroConfigSha = await getFileSha(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug, "astro.config.mjs");
   await commitFile(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug, "astro.config.mjs", toBase64(astroConfigContent), "chore: sync astro config with generator", branch, astroConfigSha);
 

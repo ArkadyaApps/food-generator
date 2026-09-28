@@ -87,7 +87,7 @@ export default function Step1Basic({ onNext, editMode = false }: Props) {
       <Field
         label="URL Slug"
         error={errors.slug?.message}
-        hint={editMode ? "Slug cannot be changed after deployment" : "Used as the subdomain: slug.pages.dev"}
+        hint={editMode ? "Slug cannot be changed after deployment" : "Used as the address: slug.pages.dev (a close variant is used if that name is taken)"}
       >
         <Input
           {...register("slug")}
