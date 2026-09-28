@@ -6,10 +6,10 @@ pages_build_output_dir = "./dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "food-generator-db"
-database_id = "bc8bd730-fe1b-475f-bf79-47dfffa03923"
+database_id = "d636b58f-6450-498c-8c21-75badbf32258"
 migrations_dir = "./migrations"
 
 [vars]
-GITHUB_OWNER = "artteabcn"
+GITHUB_OWNER = "ArkadyaApps"
 TEMPLATE_REPO = "restaurant-template"
 
