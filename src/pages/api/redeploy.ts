@@ -26,6 +26,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       await redeployRestaurantSite(slug, data, {
         GITHUB_TOKEN: env.GITHUB_TOKEN,
         GITHUB_OWNER: env.GITHUB_OWNER,
+        CF_API_TOKEN: env.CF_API_TOKEN,
       });
     } catch (err) {
       await database.update(sites).set({ status: "error", updatedAt: new Date() }).where(eq(sites.slug, slug));

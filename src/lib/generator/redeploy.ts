@@ -9,7 +9,7 @@ import {
   generateAstroConfig,
 } from "./template";
 import { THEMES } from "@/lib/themes";
-import { commitFile, getFileSha, getDefaultBranch } from "./github";
+import { commitFile, getFileSha, getDefaultBranch, addRepoSecret, deleteRepoVariable } from "./github";
 
 function toBase64(str: string): string {
   const bytes = new TextEncoder().encode(str);
@@ -26,9 +26,15 @@ export async function redeployRestaurantSite(
   env: {
     GITHUB_TOKEN: string;
     GITHUB_OWNER: string;
+    CF_API_TOKEN: string;
   }
 ): Promise<void> {
   const branch = await getDefaultBranch(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug);
+
+  // The synced workflow reads secrets.CF_API_TOKEN, so the secret must exist
+  // before the workflow is committed. Legacy sites stored it as a plaintext variable.
+  await addRepoSecret(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug, "CF_API_TOKEN", env.CF_API_TOKEN);
+  await deleteRepoVariable(env.GITHUB_TOKEN, env.GITHUB_OWNER, slug, "CF_API_TOKEN");
 
   // Keep deploy infrastructure in sync with the current generator on every
   // redeploy — sites created at different times otherwise freeze whatever

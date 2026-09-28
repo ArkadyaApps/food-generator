@@ -1,3 +1,5 @@
+import { seal } from "tweetnacl-sealedbox-js";
+
 const GITHUB_API = "https://api.github.com";
 
 function ghHeaders(token: string, extra?: Record<string, string>): Record<string, string> {
@@ -126,4 +128,59 @@ export async function addRepoVariable(
       }
     );
   }
+}
+
+function b64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function bytesToB64(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+export async function addRepoSecret(
+  token: string,
+  owner: string,
+  repo: string,
+  name: string,
+  value: string
+): Promise<void> {
+  const keyRes = await fetch(
+    `${GITHUB_API}/repos/${owner}/${repo}/actions/secrets/public-key`,
+    { headers: ghHeaders(token) }
+  );
+  if (!keyRes.ok) {
+    throw new Error(`GitHub public key fetch failed: ${await keyRes.text()}`);
+  }
+  const { key_id, key } = (await keyRes.json()) as { key_id: string; key: string };
+  const encrypted = seal(new TextEncoder().encode(value), b64ToBytes(key));
+
+  const putRes = await fetch(
+    `${GITHUB_API}/repos/${owner}/${repo}/actions/secrets/${name}`,
+    {
+      method: "PUT",
+      headers: ghHeaders(token),
+      body: JSON.stringify({ encrypted_value: bytesToB64(encrypted), key_id }),
+    }
+  );
+  if (!putRes.ok) {
+    throw new Error(`GitHub secret ${name} failed: ${await putRes.text()}`);
+  }
+}
+
+export async function deleteRepoVariable(
+  token: string,
+  owner: string,
+  repo: string,
+  name: string
+): Promise<void> {
+  await fetch(`${GITHUB_API}/repos/${owner}/${repo}/actions/variables/${name}`, {
+    method: "DELETE",
+    headers: ghHeaders(token),
+  });
 }
