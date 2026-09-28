@@ -111,7 +111,7 @@ jobs:
 `;
 }
 
-export function generateAstroConfig(data: SiteFormData): string {
+export function generateAstroConfig(data: SiteFormData, siteUrl: string): string {
   return `import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
@@ -142,13 +142,17 @@ export default defineConfig({
     locales: ["en", "fr", "th"],
     routing: { prefixDefaultLocale: true, redirectToDefaultLocale: true },
   },
-  site: ${JSON.stringify(`https://${data.slug}.pages.dev`)},
+  site: ${JSON.stringify(siteUrl)},
 });
 `;
 }
 
-export function generateWranglerToml(data: SiteFormData, d1Uuid: string): string {
-  return `name = "${data.slug}"
+export function generateWranglerToml(
+  data: SiteFormData,
+  d1Uuid: string,
+  projectName: string = data.slug
+): string {
+  return `name = "${projectName}"
 compatibility_date = "2025-02-13"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "./dist"
