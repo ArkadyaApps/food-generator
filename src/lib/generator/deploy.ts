@@ -16,6 +16,8 @@ import {
   getFileSha,
   getDefaultBranch,
   addRepoVariable,
+  addRepoSecret,
+  deleteRepoVariable,
 } from "./github";
 import { createPagesProject, createD1Database, applyD1Migration } from "./cloudflare-api";
 
@@ -185,10 +187,11 @@ export async function deployRestaurantSite(
     branch
   );
 
-  // 8. Set all required GitHub Actions variables (CF_API_TOKEN stored as variable, not secret)
+  // 8. Set GitHub Actions config: token as an encrypted secret, non-sensitive values as variables
   await addRepoVariable(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "CF_PROJECT_NAME", cfProjectName);
   await addRepoVariable(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "CF_ACCOUNT_ID", env.CF_ACCOUNT_ID);
-  await addRepoVariable(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "CF_API_TOKEN", env.CF_API_TOKEN);
+  await addRepoSecret(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "CF_API_TOKEN", env.CF_API_TOKEN);
+  await deleteRepoVariable(env.GITHUB_TOKEN, env.GITHUB_OWNER, repoName, "CF_API_TOKEN");
 
   const pagesUrl = `https://${subdomain}`;
 

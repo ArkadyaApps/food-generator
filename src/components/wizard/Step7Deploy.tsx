@@ -436,9 +436,9 @@ export default function Step7Deploy({ onBack, onSuccess, stepNumber = 7, totalSt
             color: "#92400e",
           }}
         >
-          <strong>Note:</strong> CF_API_TOKEN must be added as a GitHub Actions
-          secret manually (it requires libsodium encryption). CF_PROJECT_NAME and
-          CF_ACCOUNT_ID will be added as repository variables automatically.
+          <strong>Note:</strong> CF_API_TOKEN is stored as an encrypted GitHub Actions
+          secret automatically. CF_PROJECT_NAME and CF_ACCOUNT_ID are added as
+          repository variables.
         </div>
       )}
 
